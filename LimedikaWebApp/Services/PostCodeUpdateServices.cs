@@ -13,6 +13,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Web;
 using System.Net;
 using System.Text.Json.Serialization;
+using LimedikaWebApp.Models.Result;
+using LimedikaWebApp.Models.DTO;
 
 namespace LimedikaWebApp.Services
 {
@@ -31,7 +33,7 @@ namespace LimedikaWebApp.Services
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         }
 
-        public async Task<UpdateResult> UpdateAllClientsPostCOdeAsync()
+        public async Task<UpdateResult> UpdateAllClientsPostCodeAsync()
         {
             await _logService.LogActionAsync(ActionType.PostCodeUpdated, "Pradėtas klientų pašto kodų atnaujinimas iš PostIt API.");
             var clientsToUpdate = await _context.Clients.Where(client => string.IsNullOrEmpty(client.PostCode)).ToListAsync();
@@ -48,8 +50,7 @@ namespace LimedikaWebApp.Services
 
             int updatedCount = 0;
             int failedCount = 0;
-            // Best practice: Add a User-Agent header in Program.cs when configuring AddHttpClient
-            var httpClient = _httpClientFactory.CreateClient();
+            var httpClient = _httpClientFactory.CreateClient(); //Created HttpClient instance here due possible API IP change, to avoid issues with HttpClient lifetime management.
 
             foreach (var client in clientsToUpdate)
             {
@@ -61,10 +62,7 @@ namespace LimedikaWebApp.Services
                     continue;
                 }
 
-                // FIX #1: Use WebUtility for encoding instead of the old HttpUtility
                 string encodedSearchTerm = WebUtility.UrlEncode(client.Address);
-
-                // FIX #2: Use the correct API parameter 'term' instead of 'search'
                 string requestUrl = $"{_apiSettings.BaseUrl}?term={encodedSearchTerm}&key={_apiSettings.ApiKey}";
 
                 try
@@ -79,7 +77,6 @@ namespace LimedikaWebApp.Services
                         {
                             client.PostCode = postCodeData;
                             client.UpdatedAt = DateTime.Now;
-                            // Note: Marking as modified is more explicit than Update
                             _context.Entry(client).State = EntityState.Modified;
                             await _logService.LogActionAsync(ActionType.PostCodeUpdated, $"Atnaujintas pašto kodas klientui '{client.ClientName}' į {postCodeData}.");
                             updatedCount++;
@@ -129,31 +126,5 @@ namespace LimedikaWebApp.Services
                 FailedCount = failedCount
             };
         }
-    }
-    public class PostItApiResponse
-    {
-        public bool Success { get; set; }
-
-        // FIX #3: Apply the custom converter to handle the ambiguous 'data' field
-        [JsonConverter(typeof(SingleOrArrayConverter<PostItApiData>))]
-        public List<PostItApiData> Data { get; set; }
-
-        public string Message { get; set; }
-    }
-
-    public class PostItApiData
-    {
-        [JsonPropertyName("post_code")] // Explicitly map the JSON property name
-        public string Post_Code { get; set; }
-        public string Address { get; set; }
-        public string City { get; set; }
-    }
-
-    public class UpdateResult
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; }
-        public int UpdatedCount { get; set; }
-        public int FailedCount { get; set; }
     }
 }

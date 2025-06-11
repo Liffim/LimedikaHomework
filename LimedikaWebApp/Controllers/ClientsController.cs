@@ -32,24 +32,24 @@ namespace LimedikaWebApp.Controllers
 
         // POST: ImportClients
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [ValidateAntiForgeryToken] // Antiforgery token to prevent CSRF attacks
         public async Task<IActionResult> ImportClients(IFormFile jsonFile)
         {
-            // 1. Patikriname, ar failas buvo įkeltas
+            // 1. Check if the file is null or empty
             if (jsonFile == null || jsonFile.Length == 0)
             {
                 TempData["Message"] = "Klaida: failas nepasirinktas arba tuščias.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // 2. Patikriname, ar failo plėtinys yra .json
+            // 2. Check if the file is .json
             if (Path.GetExtension(jsonFile.FileName).ToLower() != ".json")
             {
                 TempData["Message"] = "Klaida: galima įkelti tik .json formato failus.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // 3. Atidarome failo srautą (stream) ir perduodame jį servisui
+            // 3. Process the file
             try
             {
                 using var stream = jsonFile.OpenReadStream();
@@ -58,7 +58,7 @@ namespace LimedikaWebApp.Controllers
             }
             catch (Exception ex)
             {
-                // Pagrindinė klaidų gaudyklė, jei servise įvyktų nenumatyta klaida
+                // Main catch block to handle any unexpected errors
                 await _logService.LogActionAsync(Models.ActionType.Error, $"Kritinė klaida importuojant failą: {ex.Message}");
                 TempData["Message"] = "Įvyko nenumatyta klaida apdorojant failą.";
             }
@@ -70,7 +70,7 @@ namespace LimedikaWebApp.Controllers
         [HttpPost]
         public async Task<IActionResult> UpdatePostCodes()
         {
-            var result = await _postCodeUpdateServices.UpdateAllClientsPostCOdeAsync();
+            var result = await _postCodeUpdateServices.UpdateAllClientsPostCodeAsync();
             TempData["Message"] = result.Success ? $"{result.UpdatedCount} klientų pašto kodai atnaujinti." : result.Message;
             return RedirectToAction("Index");
         }

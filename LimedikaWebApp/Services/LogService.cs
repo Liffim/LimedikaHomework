@@ -11,13 +11,14 @@ namespace LimedikaWebApp.Services
         {
             _context = context;
         }
-        public async Task LogActionAsync(ActionType action, string details, int? clientId = null)
+        public async Task LogActionAsync(ActionType action, string details, int? clientId = null, string? clientName = null)
         {
             var logEntry = new LogEntry
             {
                 Action = action,
                 Details = details,
-                ClientId = clientId
+                ClientId = clientId,
+                ClientName = clientName
             };
             _context.LogEntries.Add(logEntry);
             await _context.SaveChangesAsync();
