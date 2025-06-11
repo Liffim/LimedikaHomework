@@ -1,0 +1,21 @@
+CREATE TABLE dbo.Clients (
+    ClientId INT IDENTITY(1,1) PRIMARY KEY,
+    ClientName NVARCHAR(255) NOT NULL,
+    Address NVARCHAR(500) NOT NULL,
+    PostCode NVARCHAR(20) NULL,
+    CreatedAt DATETIME2(7) NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt DATETIME2(7) NOT NULL DEFAULT GETUTCDATE()
+);
+
+GO
+
+CREATE TABLE dbo.LogEntries (
+    LogId INT IDENTITY(1,1) PRIMARY KEY,
+    [Timestamp] DATETIME2(7) NOT NULL,
+    [Action] INT NOT NULL,
+    Details NVARCHAR(MAX) NULL,
+    ClientId INT NULL,
+    ClientName NVARCHAR(255) NULL
+);
+
+GO
